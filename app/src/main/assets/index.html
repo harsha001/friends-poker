@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Friends Poker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Figtree:wght@400;600;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one-screen card room — felt table with board and pot up top, seats as a tight grid, your hand and actions pinned at the bottom. Single dark look, by design. */
+:root {
+  --room: #0a1511;
+  --felt: #12402f;
+  --felt-edge: #0c2c21;
+  --rail: #3b2614;
+  --brass: #d9ad55;
+  --ivory: #f4efe2;
+  --ink: #1b1b1b;
+  --suit-red: #c0322b;
+  --text: #ece6d6;
+  --muted: #9fb2a6;
+  --line: #24493b;
+  --danger: #e0695f;
+  --ok: #7fd69a;
+  --display: "Rozha One", "Georgia", serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--room); color: var(--text); font-family: var(--body); font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 20px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; border-radius: 10px; padding: 11px 14px; font-weight: 700; background: #22382e; color: var(--text); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+button:disabled { opacity: .45; cursor: default; }
+.btn-gold { background: var(--brass); color: #20170a; }
+.btn-red { background: #5a2420; color: #ffd9d4; }
+.btn-ghost { background: transparent; border: 1px solid var(--line); }
+input, select { background: #0f2219; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; }
+label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Brand */
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand h1 { font-family: var(--display); font-weight: 400; font-size: 34px; margin: 0; line-height: 1; color: var(--brass); letter-spacing: .01em; }
+.brand h1 span { color: var(--ivory); }
+.brand .sub { color: var(--muted); font-size: 13px; }
+
+/* Lobby */
+.panel { background: #0f1f18; border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--ivory); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.row > * { flex: 1 1 140px; min-width: 0; }
+.tables { display: flex; flex-direction: column; gap: 8px; }
+.tablerow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #13281f; }
+.tablerow .meta { color: var(--muted); font-size: 13px; }
+.empty { color: var(--muted); font-size: 14px; }
+.suits { font-size: 22px; letter-spacing: .3em; color: var(--muted); }
+.suits b { color: var(--suit-red); font-weight: 400; }
+
+/* Table */
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.code { font-family: var(--mono); font-size: 18px; letter-spacing: .2em; color: var(--brass); }
+.topbar .actions { display: flex; gap: 8px; }
+.topbar button { padding: 8px 12px; font-size: 13px; }
+.felt {
+  position: relative; border-radius: 120px / 70px; padding: 22px 18px;
+  background: radial-gradient(ellipse at 50% 35%, #1b5a42 0%, var(--felt) 55%, var(--felt-edge) 100%);
+  box-shadow: 0 0 0 8px var(--rail), 0 0 0 10px #241608, inset 0 0 40px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 10px 4px;
+}
+.street { font-size: 11px; text-transform: uppercase; letter-spacing: .18em; color: #bfe0cf; font-weight: 600; }
+.board { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; }
+.pot { font-family: var(--mono); color: var(--ivory); font-size: 15px; }
+.pot b { color: var(--brass); }
+.msg { min-height: 20px; text-align: center; font-size: 14px; color: var(--ivory); text-wrap: balance; }
+.msg .win { color: var(--brass); font-weight: 800; }
+
+/* Cards */
+.card { width: 42px; height: 60px; border-radius: 7px; background: var(--ivory); color: var(--ink); position: relative; flex: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,.4); font-family: var(--display); }
+.card .r { position: absolute; top: 3px; left: 5px; font-size: 18px; line-height: 1; }
+.card .s { position: absolute; bottom: 4px; right: 5px; font-size: 20px; line-height: 1; font-family: system-ui, sans-serif; }
+.card.red { color: var(--suit-red); }
+.card.slot { background: transparent; border: 1.5px dashed rgba(244,239,226,.22); box-shadow: none; }
+.card.back { background: repeating-linear-gradient(45deg, #7a2420 0 4px, #8e2d27 4px 8px); border: 2px solid var(--ivory); }
+.card.sm { width: 26px; height: 37px; border-radius: 5px; }
+.card.sm .r { font-size: 12px; top: 2px; left: 3px; }
+.card.sm .s { font-size: 13px; bottom: 2px; right: 3px; }
+.card.lg { width: 64px; height: 90px; border-radius: 10px; }
+.card.lg .r { font-size: 28px; top: 5px; left: 7px; }
+.card.lg .s { font-size: 30px; bottom: 6px; right: 7px; }
+.card.hl { box-shadow: 0 0 0 2px var(--brass), 0 2px 6px rgba(0,0,0,.5); }
+
+/* Seats */
+.seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.seat { background: #0f1f18; border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.seat.turn { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass) inset; }
+.seat.folded { opacity: .5; }
+.seat.me { background: #132a20; }
+.seat .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.seat .name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.seat .chips { font-family: var(--mono); font-size: 13px; color: var(--ivory); }
+.seat .bot { display: flex; justify-content: space-between; align-items: center; gap: 6px; min-height: 37px; }
+.seat .hand { display: flex; gap: 3px; }
+.tag { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 999px; letter-spacing: .06em; text-transform: uppercase; }
+.tag.d { background: var(--ivory); color: var(--ink); }
+.tag.host { background: #22382e; color: var(--muted); }
+.tag.win { background: var(--brass); color: #20170a; }
+.last { font-size: 12px; color: var(--muted); text-align: right; }
+.bet { font-family: var(--mono); font-size: 12px; color: var(--brass); }
+.timer { font-family: var(--mono); font-size: 11px; color: var(--brass); }
+
+/* My area */
+.mine { background: #0f1f18; border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.mine .head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.mine .hole { display: flex; gap: 8px; }
+.mine .info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mine .strength { font-family: var(--display); font-size: 20px; color: var(--ivory); }
+.mine .stack { color: var(--muted); font-size: 13px; }
+.bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.bar button { padding: 14px 8px; font-size: 15px; }
+.raise { display: flex; flex-direction: column; gap: 10px; }
+.raise .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.raise .quick button { padding: 8px 4px; font-size: 13px; }
+.raise input[type=range] { padding: 0; accent-color: var(--brass); }
+.raise .amt { display: flex; justify-content: space-between; align-items: center; }
+.raise .amt b { font-family: var(--mono); font-size: 20px; color: var(--brass); }
+.hostbar { display: flex; gap: 8px; flex-wrap: wrap; }
+.hostbar button { flex: 1 1 140px; }
+.note { color: var(--muted); font-size: 13px; }
+.log { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+.log div:first-child { color: var(--text); }
+details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+.offline { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 30; background: #5a2420; color: #ffe1dc; text-align: center; font-size: 13px; font-weight: 600; padding: 6px max(16px, env(safe-area-inset-left, 0px)); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: #3a1d1a; color: #ffe1dc; border: 1px solid var(--danger);
+  padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+.toast.ok { background: #183524; color: #dff7e6; border-color: var(--ok); }
+@media (prefers-reduced-motion: no-preference) {
+  .card.deal { animation: deal .28s ease-out both; }
+  @keyframes deal { from { transform: translateY(-10px) scale(.92); opacity: .3; } to { transform: none; opacity: 1; } }
+}
+@media (max-width: 420px) {
+  .card { width: 38px; height: 54px; }
+  .card .r { font-size: 16px; } .card .s { font-size: 17px; }
+  .board { gap: 4px; }
+  .seats { grid-template-columns: 1fr 1fr; }
+  .felt { border-radius: 70px / 50px; padding: 18px 10px; }
+}
+</style>
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; -webkit-user-select: none; user-select: none; }
+input { -webkit-user-select: text; user-select: text; }
+[hidden] { display: none !important; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<div class="offline" id="offline" hidden>Offline · reconnecting…</div>
+<div class="wrap" id="app">
+  <div class="brand"><h1>Friends <span>Poker</span></h1><div class="sub">Texas Hold'em · play money</div></div>
+  <div class="panel"><div class="empty">Shuffling up… connecting to the card room.</div></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+
+(() => {
+"use strict";
+const RANKS = "23456789TJQKA";
+const SUITS = { s: "♠", h: "♥", d: "♦", c: "♣" };
+const HAND_NAMES = ["High card","Pair","Two pair","Three of a kind","Straight","Flush","Full house","Four of a kind","Straight flush"];
+const MAX_PLAYERS = 9;
+
+let rdb = null, myId = null, online = true;
+let tableCode = null, S = null, unsubTable = null, unsubList = null, openTables = [];
+let raiseOpen = false, raiseVal = 0, busy = false, lastHandRendered = -1;
+
+const $app = document.getElementById("app");
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => Number(n || 0).toLocaleString("en-US");
+
+function toast(text, ok) {
+  const t = document.getElementById("toast");
+  t.textContent = text; t.className = "toast" + (ok ? " ok" : ""); t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600);
+}
+
+/* ---------- Hand evaluation ---------- */
+const rv = c => RANKS.indexOf(c[0]) + 2;
+function eval5(cs) {
+  const v = cs.map(rv).sort((a, b) => b - a);
+  const flush = cs.every(c => c[1] === cs[0][1]);
+  const uniq = [...new Set(v)];
+  let straightHigh = 0;
+  if (uniq.length === 5) {
+    if (v[0] - v[4] === 4) straightHigh = v[0];
+    else if (v.join() === "14,5,4,3,2") straightHigh = 5;
+  }
+  const cnt = {}; v.forEach(x => cnt[x] = (cnt[x] || 0) + 1);
+  const groups = Object.entries(cnt).map(([k, n]) => [n, +k]).sort((a, b) => b[0] - a[0] || b[1] - a[1]);
+  const kick = groups.map(g => g[1]);
+  if (straightHigh && flush) return [8, straightHigh];
+  if (groups[0][0] === 4) return [7, ...kick];
+  if (groups[0][0] === 3 && groups[1][0] === 2) return [6, ...kick];
+  if (flush) return [5, ...v];
+  if (straightHigh) return [4, straightHigh];
+  if (groups[0][0] === 3) return [3, ...kick];
+  if (groups[0][0] === 2 && groups[1][0] === 2) return [2, ...kick];
+  if (groups[0][0] === 2) return [1, ...kick];
+  return [0, ...v];
+}
+function cmp(a, b) { for (let i = 0; i < Math.max(a.length, b.length); i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d; } return 0; }
+function best(cards) {
+  if (cards.length < 5) return null;
+  let top = null, topCards = null;
+  const n = cards.length;
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) for (let c = b + 1; c < n; c++) for (let d = c + 1; d < n; d++) for (let e = d + 1; e < n; e++) {
+    const five = [cards[a], cards[b], cards[c], cards[d], cards[e]];
+    const s = eval5(five);
+    if (!top || cmp(s, top) > 0) { top = s; topCards = five; }
+  }
+  return { score: top, cards: topCards, name: HAND_NAMES[top[0]] };
+}
+function partialName(cards) {
+  const v = cards.map(rv);
+  if (cards.length === 2) return v[0] === v[1] ? "Pocket pair" : (cards[0][1] === cards[1][1] ? "Suited" : "Offsuit");
+  return "";
+}
+
+/* ---------- Game engine (pure state mutations) ---------- */
+function newDeck() {
+  const d = [];
+  for (const r of RANKS) for (const s of "shdc") d.push(r + s);
+  const rnd = new Uint32Array(d.length); crypto.getRandomValues(rnd);
+  for (let i = d.length - 1; i > 0; i--) { const j = rnd[i] % (i + 1); [d[i], d[j]] = [d[j], d[i]]; }
+  return d;
+}
+const canAct = p => p.inHand && !p.folded && !p.allIn;
+const live = p => p.inHand && !p.folded;
+function nextIdx(S, from, pred) {
+  const n = S.players.length;
+  for (let k = 1; k <= n; k++) { const i = ((from + k) % n + n) % n; if (pred(S.players[i])) return i; }
+  return -1;
+}
+const dealerIdx = S => S.players.findIndex(p => p.id === S.dealerId);
+function put(p, a) { a = Math.max(0, Math.min(a, p.chips)); p.chips -= a; p.bet += a; p.total += a; if (p.chips === 0) p.allIn = true; return a; }
+function log(S, text) { S.log = [text, ...(S.log || [])].slice(0, 30); }
+const potOf = S => S.players.reduce((t, p) => t + (p.total || 0), 0);
+
+function startHand(S) {
+  S.players = S.players.filter(p => !p.leaving);
+  const ready = S.players.filter(p => p.chips > 0);
+  if (ready.length < 2) return "Need at least 2 players with chips to deal.";
+  for (const p of S.players) Object.assign(p, { hole: [], inHand: p.chips > 0, folded: false, allIn: false, bet: 0, total: 0, acted: false, last: "" });
+  const prev = dealerIdx(S);
+  const d = nextIdx(S, prev === -1 ? -1 : prev, p => p.inHand);
+  S.dealerId = S.players[d].id;
+  const headsUp = ready.length === 2;
+  const sb = headsUp ? d : nextIdx(S, d, p => p.inHand);
+  const bb = nextIdx(S, sb, p => p.inHand);
+  put(S.players[sb], S.sb); S.players[sb].last = "SB " + S.sb;
+  put(S.players[bb], S.bb); S.players[bb].last = "BB " + S.bb;
+  S.deck = newDeck();
+  let i = d;
+  for (let round = 0; round < 2; round++) for (let k = 0; k < ready.length; k++) { i = nextIdx(S, i, p => p.inHand); S.players[i].hole.push(S.deck.pop()); }
+  S.board = []; S.street = "preflop"; S.status = "playing"; S.handNo = (S.handNo || 0) + 1;
+  S.currentBet = Math.max(...S.players.map(p => p.bet)); S.minRaise = S.bb;
+  S.results = null; S.message = "";
+  log(S, `Hand #${S.handNo} dealt · ${S.players[d].name} has the button`);
+  S.turn = nextIdx(S, bb, canAct);
+  S.turnAt = Date.now();
+  if (S.turn === -1 || S.players.filter(canAct).length === 0) progress(S, bb);
+  return null;
+}
+
+function act(S, pid, type, amount) {
+  if (S.status !== "playing") return "No hand in progress.";
+  const p = S.players[S.turn];
+  if (!p || p.id !== pid) return "It's not your turn.";
+  const toCall = S.currentBet - p.bet;
+  const raiseTo = target => {
+    const inc = target - S.currentBet;
+    if (inc >= S.minRaise) S.minRaise = inc;
+    S.currentBet = target;
+    put(p, target - p.bet);
+    for (const o of S.players) if (o !== p && canAct(o)) o.acted = false;
+    p.last = p.allIn ? `All-in ${fmt(p.bet)}` : `Raise to ${fmt(target)}`;
+  };
+  if (type === "fold") { p.folded = true; p.last = "Fold"; }
+  else if (type === "check") { if (toCall > 0) return `You need to call ${fmt(toCall)} or fold.`; p.last = "Check"; }
+  else if (type === "call") {
+    if (toCall <= 0) { p.last = "Check"; }
+    else { put(p, toCall); p.last = p.allIn ? `All-in ${fmt(p.bet)}` : `Call ${fmt(toCall)}`; }
+  }
+  else if (type === "raise") {
+    const max = p.bet + p.chips, min = S.currentBet + S.minRaise;
+    amount = Math.floor(amount);
+    if (!(amount > S.currentBet)) return "A raise must be more than the current bet.";
+    if (amount > max) return `You only have ${fmt(max)} total.`;
+    if (amount < min && amount < max) return `Minimum raise is to ${fmt(min)}.`;
+    raiseTo(amount);
+  }
+  else if (type === "allin") {
+    const target = p.bet + p.chips;
+    if (target <= S.currentBet) { put(p, p.chips); p.last = `All-in ${fmt(p.bet)}`; }
+    else raiseTo(target);
+  }
+  else return "Unknown action.";
+  p.acted = true;
+  log(S, `${p.name}: ${p.last}`);
+  progress(S, S.turn);
+  return null;
+}
+
+function progress(S, from) {
+  const liveP = S.players.filter(live);
+  if (liveP.length === 1) return winByFold(S, liveP[0]);
+  const actors = S.players.filter(canAct);
+  const done = actors.length === 0
+    || actors.every(p => p.acted && p.bet === S.currentBet)
+    || (actors.length === 1 && actors[0].bet >= S.currentBet && S.players.filter(live).every(p => p.allIn || p === actors[0]));
+  if (!done) {
+    S.turn = nextIdx(S, from, p => canAct(p) && (!p.acted || p.bet < S.currentBet));
+    S.turnAt = Date.now();
+    return;
+  }
+  const deal = () => {
+    for (const p of S.players) { p.bet = 0; p.acted = false; if (live(p) && !p.allIn) p.last = ""; }
+    S.currentBet = 0; S.minRaise = S.bb;
+    S.deck.pop(); // burn
+    if (S.street === "preflop") { S.board.push(S.deck.pop(), S.deck.pop(), S.deck.pop()); S.street = "flop"; }
+    else if (S.street === "flop") { S.board.push(S.deck.pop()); S.street = "turn"; }
+    else if (S.street === "turn") { S.board.push(S.deck.pop()); S.street = "river"; }
+  };
+  if (S.street === "river") return showdown(S);
+  deal();
+  while (S.players.filter(canAct).length < 2 && S.street !== "river") deal();
+  if (S.players.filter(canAct).length < 2) return showdown(S);
+  S.turn = nextIdx(S, dealerIdx(S), canAct);
+  S.turnAt = Date.now();
+}
+
+function winByFold(S, w) {
+  const pot = potOf(S);
+  w.chips += pot;
+  for (const p of S.players) p.bet = 0;
+  S.results = { reveal: false, winners: [{ id: w.id, amount: pot, hand: "" }], hands: {} };
+  S.message = `${w.name} wins ${fmt(pot)}`;
+  log(S, `${w.name} wins ${fmt(pot)} (everyone else folded)`);
+  S.status = "over"; S.turn = -1;
+}
+
+function showdown(S) {
+  for (const p of S.players) p.bet = 0;
+  const hands = {};
+  for (const p of S.players.filter(live)) hands[p.id] = best([...p.hole, ...S.board]);
+  const contribs = S.players.filter(p => p.total > 0);
+  const levels = [...new Set(contribs.map(p => p.total))].sort((a, b) => a - b);
+  const won = {};
+  let prev = 0;
+  const order = []; // seat order starting left of dealer, for odd chips
+  let i = dealerIdx(S);
+  for (let k = 0; k < S.players.length; k++) { i = (i + 1) % S.players.length; order.push(S.players[i].id); }
+  for (const lvl of levels) {
+    const amount = contribs.reduce((t, p) => t + Math.max(0, Math.min(p.total, lvl) - prev), 0);
+    let elig = S.players.filter(p => live(p) && p.total >= lvl);
+    if (!elig.length) elig = S.players.filter(live);
+    let top = null, ws = [];
+    for (const p of elig) { const c = top ? cmp(hands[p.id].score, top) : 1; if (c > 0) { top = hands[p.id].score; ws = [p]; } else if (c === 0) ws.push(p); }
+    ws.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    const share = Math.floor(amount / ws.length);
+    let rem = amount - share * ws.length;
+    for (const w of ws) { const a = share + (rem-- > 0 ? 1 : 0); won[w.id] = (won[w.id] || 0) + a; }
+    prev = lvl;
+  }
+  const winners = Object.entries(won).map(([id, amount]) => {
+    const p = S.players.find(x => x.id === id); p.chips += amount;
+    return { id, amount, hand: hands[id].name };
+  });
+  const handInfo = {};
+  for (const [id, h] of Object.entries(hands)) handInfo[id] = { name: h.name, cards: h.cards };
+  S.results = { reveal: true, winners, hands: handInfo };
+  S.message = winners.map(w => `${S.players.find(p => p.id === w.id).name} wins ${fmt(w.amount)} with ${w.hand.toLowerCase()}`).join(" · ");
+  log(S, S.message);
+  S.status = "over"; S.turn = -1;
+}
+
+/* ---------- Store (Firebase Realtime Database) ---------- */
+const arr = v => Array.isArray(v) ? v.filter(x => x != null)
+  : (v && typeof v === "object") ? Object.keys(v).sort((a, b) => a - b).map(k => v[k]).filter(x => x != null) : [];
+function norm(d) {
+  if (!d) return null;
+  d.players = arr(d.players).map(p => Object.assign({ hole: [], inHand: false, folded: false, allIn: false, bet: 0, total: 0, acted: false, last: "", chips: 0 }, p, { hole: arr(p.hole) }));
+  d.board = arr(d.board); d.deck = arr(d.deck); d.log = arr(d.log);
+  if (d.turn == null) d.turn = -1;
+  if (d.dealerId === undefined) d.dealerId = null;
+  if (d.results) {
+    d.results.winners = arr(d.results.winners);
+    const h = d.results.hands || {};
+    for (const k in h) h[k].cards = arr(h[k].cards);
+    d.results.hands = h;
+  }
+  return d;
+}
+const clean = o => JSON.parse(JSON.stringify(o));
+const tableRef = code => rdb.ref("tables/" + code);
+
+function mutate(code, fn) {
+  if (busy) return Promise.resolve();
+  busy = true;
+  let err = null;
+  return tableRef(code).transaction(cur => {
+    err = null;
+    if (cur === null) return null;
+    const st = norm(clean(cur));
+    err = fn(st);
+    if (err) return; // abort
+    st.updatedAt = Date.now();
+    return clean(st);
+  }, null, false).then(() => { if (err) toast(err); })
+    .catch(() => toast(online ? "Couldn't save that move. Try again." : "You're offline. Reconnect and try again."))
+    .finally(() => { busy = false; });
+}
+
+function myName() { return (store.get("fp-name") || "").trim().slice(0, 18); }
+
+async function createTable() {
+  const name = myName(); if (!name) return toast("Enter your name first.");
+  const chips = +document.getElementById("startChips").value;
+  const [sb, bb] = document.getElementById("blinds").value.split("/").map(Number);
+  try {
+    let code;
+    for (let i = 0; i < 6; i++) {
+      code = Array.from({ length: 4 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)]).join("");
+      const s = await tableRef(code).once("value"); if (!s.exists()) break;
+    }
+    const st = {
+      code, hostId: myId, startChips: chips, sb, bb, status: "lobby", handNo: 0, dealerId: null, turn: -1,
+      players: [{ id: myId, name, chips, hole: [], inHand: false, folded: false, allIn: false, bet: 0, total: 0, acted: false, last: "" }],
+      board: [], deck: [], log: [`${name} opened the table`], updatedAt: Date.now(), createdAt: Date.now()
+    };
+    await tableRef(code).set(clean(st));
+    enterTable(code);
+  } catch { toast("Couldn't create the table. Check your internet and try again."); }
+}
+
+async function joinTable(code) {
+  code = (code || "").toUpperCase().replace(/[^A-Z]/g, "");
+  const name = myName(); if (!name) return toast("Enter your name first.");
+  if (code.length !== 4) return toast("Table codes are 4 letters.");
+  let d;
+  try { d = norm((await tableRef(code).once("value")).val()); }
+  catch { return toast("Couldn't reach the table. Check your internet."); }
+  if (!d) return toast(`No table with code ${code}.`);
+  if (!d.players.some(p => p.id === myId)) {
+    await mutate(code, st => {
+      if (st.players.some(p => p.id === myId)) return null;
+      if (st.players.length >= MAX_PLAYERS) return "That table is full (9 players).";
+      st.players.push({ id: myId, name, chips: st.startChips, hole: [], inHand: false, folded: false, allIn: false, bet: 0, total: 0, acted: false, last: "" });
+      log(st, `${name} sat down`);
+      return null;
+    });
+  }
+  enterTable(code);
+}
+
+function enterTable(code) {
+  tableCode = code; store.set("fp-table", code);
+  if (unsubTable) unsubTable();
+  S = null; raiseOpen = false;
+  render();
+  const ref = tableRef(code);
+  const cb = snap => {
+    const d = norm(snap.val());
+    if (!d) { leaveView(); toast("The table was closed."); return; }
+    if (S && (S.handNo !== d.handNo || S.turn !== d.turn)) raiseOpen = false;
+    S = d; render();
+  };
+  ref.on("value", cb, () => toast("Lost connection to the table. Reopen the app."));
+  unsubTable = () => ref.off("value", cb);
+}
+function leaveView() { if (unsubTable) unsubTable(); unsubTable = null; tableCode = null; S = null; store.set("fp-table", null); render(); }
+
+async function leaveTable() {
+  const code = tableCode;
+  await mutate(code, st => {
+    const i = st.players.findIndex(p => p.id === myId);
+    if (i === -1) return null;
+    const p = st.players[i];
+    log(st, `${p.name} left the table`);
+    if (st.status === "playing" && p.inHand) {
+      if (live(p)) { p.folded = true; p.last = "Left"; }
+      p.leaving = true;
+      if (st.turn === i) progress(st, i);
+      else { const l = st.players.filter(live); if (l.length === 1) winByFold(st, l[0]); }
+    } else st.players.splice(i, 1);
+    const remaining = st.players.filter(x => !x.leaving);
+    if (st.hostId === myId && remaining.length) st.hostId = remaining[0].id;
+    return null;
+  });
+  leaveView();
+}
+
+function invite() {
+  const text = `Join my Friends Poker table! Open the app and enter code ${S.code}`;
+  if (window.Android && Android.share) { Android.share(text); return; }
+  navigator.clipboard.writeText(S.code).then(() => toast(`Code ${S.code} copied.`, true), () => toast(`Table code: ${S.code}`, true));
+}
+
+window.fpBack = () => {
+  if (raiseOpen) { raiseOpen = false; render(); return true; }
+  if (tableCode) { leaveView(); return true; }
+  return false;
+};
+
+/* ---------- Rendering ---------- */
+function cardHTML(c, cls = "") {
+  if (!c) return `<div class="card slot ${cls}"></div>`;
+  if (c === "back") return `<div class="card back ${cls}"></div>`;
+  const red = c[1] === "h" || c[1] === "d";
+  const r = c[0] === "T" ? "10" : c[0];
+  return `<div class="card ${red ? "red" : ""} ${cls}" aria-label="${r}${SUITS[c[1]]}"><span class="r">${r}</span><span class="s">${SUITS[c[1]]}</span></div>`;
+}
+
+function renderLobby() {
+  const name = myName();
+  const recent = openTables.filter(t => Date.now() - (t.updatedAt || 0) < 12 * 3600e3);
+  return `
+  <div class="brand"><h1>Friends <span>Poker</span></h1><div class="sub">Texas Hold'em · play money · 2–9 players</div></div>
+  <div class="suits" aria-hidden="true">♠<b>♥</b>♣<b>♦</b></div>
+  <div class="panel">
+    <label for="nameIn">Your name at the table<input id="nameIn" maxlength="18" placeholder="e.g. Harsha" value="${esc(name)}"></label>
+  </div>
+  <div class="panel">
+    <h2>Start a table</h2>
+    <div class="row">
+      <label for="startChips">Starting chips<select id="startChips"><option>500</option><option selected>1000</option><option>2000</option><option>5000</option></select></label>
+      <label for="blinds">Blinds<select id="blinds"><option>5/10</option><option selected>10/20</option><option>25/50</option><option>50/100</option></select></label>
+    </div>
+    <button class="btn-gold" id="createBtn">Create table</button>
+    <div class="note">You'll get a 4-letter code to send your friends.</div>
+  </div>
+  <div class="panel">
+    <h2>Join a table</h2>
+    <div class="row"><label for="codeIn">Table code<input id="codeIn" maxlength="4" placeholder="ABCD" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:.2em"></label><button class="btn-gold" id="joinBtn" style="flex:0 0 auto">Join</button></div>
+    <div class="tables">
+      ${recent.length ? recent.map(t => `<div class="tablerow"><div><div class="mono" style="letter-spacing:.15em;color:var(--brass)">${esc(t.code)}</div><div class="meta">${t.players.length} seated · blinds ${t.sb}/${t.bb} · ${t.status === "playing" ? "hand in play" : "between hands"}</div></div><button data-join="${esc(t.code)}">${t.players.some(p => p.id === myId) ? "Return" : "Sit down"}</button></div>`).join("")
+        : `<div class="empty">No open tables right now. Create one and share the code.</div>`}
+    </div>
+  </div>`;
+}
+
+function renderTable() {
+  if (!S) return `<div class="brand"><h1>Friends <span>Poker</span></h1></div><div class="panel"><div class="empty">Taking your seat at ${esc(tableCode)}…</div></div>`;
+  const me = S.players.find(p => p.id === myId);
+  const isHost = S.hostId === myId;
+  const pot = potOf(S);
+  const dIdx = dealerIdx(S);
+  const turnP = S.status === "playing" ? S.players[S.turn] : null;
+  const winnerIds = new Set((S.results?.winners || []).map(w => w.id));
+  const streetLabel = S.status === "playing" ? S.street : S.status === "over" ? (S.results?.reveal ? "showdown" : "hand over") : "waiting for players";
+  const fresh = S.handNo !== lastHandRendered;
+
+  const board = [0,1,2,3,4].map(i => cardHTML(S.board[i], S.board[i] && fresh ? "deal" : "")).join("");
+  let msg = "";
+  if (S.status === "lobby") msg = S.players.length < 2 ? "Tap Invite to send friends the code. You need at least 2 players." : (isHost ? "Everyone in? Deal the first hand." : "Waiting for the host to deal.");
+  else if (S.status === "over") msg = `<span class="win">${esc(S.message)}</span>`;
+  else if (turnP) msg = turnP.id === myId ? "Your move." : `${esc(turnP.name)} to act…`;
+
+  const seats = S.players.map((p, i) => {
+    const showFace = S.status === "over" && S.results?.reveal && live(p);
+    let cards = "";
+    if (p.id === myId) cards = "";
+    else if (showFace) cards = p.hole.map(c => cardHTML(c, "sm" + (S.results.hands[p.id]?.cards.includes(c) && winnerIds.has(p.id) ? " hl" : ""))).join("");
+    else if (live(p) && S.status !== "lobby") cards = cardHTML("back", "sm") + cardHTML("back", "sm");
+    const isTurn = turnP && turnP.id === p.id;
+    const handName = showFace ? S.results.hands[p.id]?.name : "";
+    return `<div class="seat ${isTurn ? "turn" : ""} ${p.inHand && p.folded ? "folded" : ""} ${p.id === myId ? "me" : ""}">
+      <div class="top"><span class="name">${esc(p.name)}${p.id === myId ? " (you)" : ""}</span><span style="display:flex;gap:4px">${i === dIdx && S.status !== "lobby" ? '<span class="tag d">D</span>' : ""}${winnerIds.has(p.id) ? '<span class="tag win">Won</span>' : ""}${p.id === S.hostId ? '<span class="tag host">Host</span>' : ""}</span></div>
+      <div class="chips">${fmt(p.chips)} chips${p.bet ? ` · <span class="bet">bet ${fmt(p.bet)}</span>` : ""}</div>
+      <div class="bot"><div class="hand">${cards}</div><div class="last">${isTurn ? `<span class="timer" data-since="${S.turnAt}"></span>` : esc(handName || p.last || (!p.inHand && S.status === "playing" ? (p.chips ? "Next hand" : "Out of chips") : ""))}</div></div>
+    </div>`;
+  }).join("");
+
+  // My area
+  let mine = "";
+  if (!me) {
+    mine = `<div class="mine"><div class="note">You're watching this table.</div><button class="btn-gold" id="sitBtn">Sit down</button></div>`;
+  } else {
+    const hole = me.hole && me.inHand ? me.hole : [];
+    const bh = hole.length && S.board.length >= 3 ? best([...hole, ...S.board]) : null;
+    const strength = bh ? bh.name : (hole.length === 2 ? partialName(hole) : (S.status === "playing" ? "Sitting this hand out" : "Waiting for the deal"));
+    mine = `<div class="mine">
+      <div class="head">
+        <div class="hole">${hole.length ? hole.map(c => cardHTML(c, "lg" + (fresh ? " deal" : "") + (bh && bh.cards.includes(c) ? " hl" : ""))).join("") : cardHTML(null, "lg") + cardHTML(null, "lg")}</div>
+        <div class="info"><div class="strength">${esc(me.folded && me.inHand ? "Folded" : strength)}</div><div class="stack mono">${fmt(me.chips)} chips${me.bet ? ` · in front ${fmt(me.bet)}` : ""}</div></div>
+      </div>
+      ${actionBar(me)}
+      ${hostBar(me, isHost)}
+    </div>`;
+  }
+
+  return `
+  <div class="topbar">
+    <div class="brand"><h1 style="font-size:24px">Friends <span>Poker</span></h1></div>
+    <div class="actions"><button class="btn-ghost" id="copyBtn">Invite <span class="code" style="font-size:14px">${esc(S.code)}</span></button><button class="btn-ghost" id="leaveBtn">Leave</button></div>
+  </div>
+  <div class="felt">
+    <div class="street">${esc(streetLabel)} · blinds ${S.sb}/${S.bb}${S.handNo ? ` · hand #${S.handNo}` : ""}</div>
+    <div class="board">${board}</div>
+    <div class="pot">Pot <b>${fmt(pot)}</b></div>
+    <div class="msg">${msg}</div>
+  </div>
+  <div class="seats">${seats}</div>
+  ${mine}
+  <details><summary>Table log</summary><div class="log">${(S.log || []).slice(0, 12).map(l => `<div>${esc(l)}</div>`).join("")}</div></details>`;
+}
+
+function actionBar(me) {
+  if (S.status !== "playing") return "";
+  const myTurn = S.players[S.turn]?.id === myId;
+  if (!myTurn) return me.inHand && !me.folded && !me.allIn ? `<div class="note">Wait for your turn. Cards are dealt; ${esc(S.players[S.turn]?.name || "")} is thinking.</div>` : "";
+  const toCall = S.currentBet - me.bet;
+  const maxTo = me.bet + me.chips;
+  const minTo = Math.min(S.currentBet + S.minRaise, maxTo);
+  const canRaise = maxTo > S.currentBet;
+  if (raiseOpen && canRaise) {
+    raiseVal = Math.max(minTo, Math.min(raiseVal || minTo, maxTo));
+    const pot = potOf(S);
+    const half = Math.min(maxTo, Math.max(minTo, S.currentBet + Math.floor((pot + toCall) / 2)));
+    const full = Math.min(maxTo, Math.max(minTo, S.currentBet + pot + toCall));
+    return `<div class="raise">
+      <div class="amt"><span class="note">${S.currentBet ? "Raise to" : "Bet"}</span><b id="raiseAmt">${fmt(raiseVal)}</b></div>
+      <input type="range" id="raiseRange" min="${minTo}" max="${maxTo}" step="${S.bb >= 10 ? Math.min(S.bb / 2, 10) : 1}" value="${raiseVal}" aria-label="Raise amount">
+      <div class="quick"><button data-amt="${minTo}">Min</button><button data-amt="${half}">½ pot</button><button data-amt="${full}">Pot</button><button data-amt="${maxTo}">All-in</button></div>
+      <div class="bar" style="grid-template-columns:1fr 2fr"><button class="btn-ghost" id="raiseCancel">Back</button><button class="btn-gold" id="raiseGo">${raiseVal >= maxTo ? "All-in " + fmt(maxTo) : (S.currentBet ? "Raise to " : "Bet ") + fmt(raiseVal)}</button></div>
+    </div>`;
+  }
+  const callLabel = toCall <= 0 ? "Check" : toCall >= me.chips ? `All-in ${fmt(me.chips)}` : `Call ${fmt(toCall)}`;
+  return `<div class="bar">
+    <button class="btn-red" data-act="fold">Fold</button>
+    <button data-act="${toCall <= 0 ? "check" : "call"}">${callLabel}</button>
+    <button class="btn-gold" id="raiseOpen" ${canRaise && toCall < me.chips ? "" : "disabled"}>${S.currentBet ? "Raise" : "Bet"}</button>
+  </div>`;
+}
+
+function hostBar(me, isHost) {
+  const b = [];
+  if (S.status !== "playing") {
+    if (isHost) b.push(`<button class="btn-gold" id="dealBtn">${S.status === "lobby" ? "Deal first hand" : "Deal next hand"}</button>`);
+    else b.push(`<div class="note">${S.status === "over" ? "The host deals the next hand." : ""}</div>`);
+    if (me.chips === 0) b.push(`<button id="rebuyBtn">Rebuy ${fmt(S.startChips)} chips</button>`);
+  } else if (isHost && S.players[S.turn] && S.players[S.turn].id !== myId) {
+    b.push(`<button class="btn-ghost" id="forceBtn">Fold for ${esc(S.players[S.turn].name)} (away)</button>`);
+  }
+  return b.length ? `<div class="hostbar">${b.join("")}</div>` : "";
+}
+
+function render() {
+  const active = document.activeElement?.id;
+  $app.innerHTML = tableCode ? renderTable() : renderLobby();
+  if (S) lastHandRendered = S.handNo;
+  if (active && document.getElementById(active) && active !== "raiseRange") document.getElementById(active).focus();
+  bind(); tick();
+}
+
+function bind() {
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on("nameIn", "input", e => store.set("fp-name", e.target.value.trim()));
+  on("createBtn", "click", createTable);
+  on("joinBtn", "click", () => joinTable(document.getElementById("codeIn").value));
+  on("codeIn", "keydown", e => { if (e.key === "Enter") joinTable(e.target.value); });
+  $app.querySelectorAll("[data-join]").forEach(b => b.addEventListener("click", () => joinTable(b.dataset.join)));
+  on("leaveBtn", "click", leaveTable);
+  on("copyBtn", "click", invite);
+  on("sitBtn", "click", () => joinTable(tableCode));
+  on("dealBtn", "click", () => mutate(tableCode, st => st.hostId !== myId ? "Only the host can deal." : st.status === "playing" ? null : startHand(st)));
+  on("rebuyBtn", "click", () => mutate(tableCode, st => { const p = st.players.find(x => x.id === myId); if (!p || p.chips > 0 || st.status === "playing" && p.inHand) return null; p.chips = st.startChips; log(st, `${p.name} rebought for ${fmt(st.startChips)}`); return null; }));
+  on("forceBtn", "click", () => mutate(tableCode, st => { if (st.hostId !== myId || st.status !== "playing") return null; const p = st.players[st.turn]; return act(st, p.id, "fold"); }));
+  $app.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => { const t = b.dataset.act; mutate(tableCode, st => act(st, myId, t)); }));
+  on("raiseOpen", "click", () => { raiseOpen = true; raiseVal = 0; render(); });
+  on("raiseCancel", "click", () => { raiseOpen = false; render(); });
+  on("raiseRange", "input", e => { raiseVal = +e.target.value; updateRaiseLabel(); });
+  $app.querySelectorAll("[data-amt]").forEach(b => b.addEventListener("click", () => { raiseVal = +b.dataset.amt; const r = document.getElementById("raiseRange"); if (r) r.value = raiseVal; updateRaiseLabel(); }));
+  on("raiseGo", "click", () => { const v = raiseVal; raiseOpen = false; const me = S.players.find(p => p.id === myId); mutate(tableCode, st => v >= me.bet + me.chips ? act(st, myId, "allin") : act(st, myId, "raise", v)); });
+}
+function updateRaiseLabel() {
+  const me = S.players.find(p => p.id === myId); const maxTo = me.bet + me.chips;
+  document.getElementById("raiseAmt").textContent = fmt(raiseVal);
+  document.getElementById("raiseGo").textContent = raiseVal >= maxTo ? "All-in " + fmt(maxTo) : (S.currentBet ? "Raise to " : "Bet ") + fmt(raiseVal);
+}
+function tick() {
+  document.querySelectorAll("[data-since]").forEach(el => {
+    const s = Math.max(0, Math.floor((Date.now() - +el.dataset.since) / 1000));
+    el.textContent = s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+  });
+}
+setInterval(tick, 1000);
+
+/* ---------- Boot ---------- */
+function fatal(title, text) {
+  $app.innerHTML = `<div class="brand"><h1>Friends <span>Poker</span></h1></div><div class="panel"><h2>${esc(title)}</h2><div class="empty">${esc(text)}</div><button class="btn-gold" onclick="location.reload()">Try again</button></div>`;
+}
+async function boot() {
+  myId = store.get("fp-id");
+  if (!myId) {
+    const b = new Uint8Array(12); crypto.getRandomValues(b);
+    myId = "p" + Array.from(b, x => "abcdefghijklmnopqrstuvwxyz0123456789"[x % 36]).join("");
+    store.set("fp-id", myId);
+  }
+  if (!window.firebase || !firebase.database) return fatal("No internet connection", "Friends Poker needs the internet to reach your table. Connect to Wi-Fi or mobile data and try again.");
+  const cfg = window.FIREBASE_CONFIG;
+  if (!cfg || !cfg.databaseURL) return fatal("Game server not set up", "This copy of the app has no game server configured.");
+  firebase.initializeApp(cfg);
+  rdb = firebase.database();
+  rdb.ref(".info/connected").on("value", s => {
+    const was = online; online = !!s.val();
+    const bar = document.getElementById("offline"); if (bar) bar.hidden = online;
+    if (was !== online && online && tableCode) toast("Back online.", true);
+  });
+  rdb.ref("tables").orderByChild("updatedAt").limitToLast(10).on("value", snap => {
+    const a = []; snap.forEach(c => { const d = norm(c.val()); if (d) a.push(d); });
+    openTables = a.reverse();
+    if (!tableCode) render();
+  }, () => {});
+  const saved = store.get("fp-table");
+  if (saved) {
+    try {
+      const d = norm((await tableRef(saved).once("value")).val());
+      if (d && d.players.some(p => p.id === myId)) return enterTable(saved);
+    } catch {}
+    store.set("fp-table", null);
+  }
+  render();
+}
+boot();
+})();
+</script>
+</body>
+</html>
