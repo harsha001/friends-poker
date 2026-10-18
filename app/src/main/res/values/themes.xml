@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="room">#0A1511</color>
+    <color name="felt">#12402F</color>
+    <color name="brass">#D9AD55</color>
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/room</item>
+        <item name="android:statusBarColor">@color/room</item>
+        <item name="android:navigationBarColor">@color/room</item>
+        <item name="android:colorAccent">@color/brass</item>
+    </style>
+</resources>
