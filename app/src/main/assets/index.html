@@ -976,7 +976,8 @@ function renderTable() {
     const isMe = p.id === myId;
     const showFace = S.status === "over" && S.results?.reveal && live(p) && !isMe;
     let cards = "", cardsCls = "";
-    if (showFace) { cards = p.hole.map(c => cardHTML(c, "sm" + (winnerIds.has(p.id) && S.results.hands[p.id]?.cards.includes(c) ? " hl" : ""))).join(""); cardsCls = "show"; }
+    if (isMe && p.inHand && p.hole.length) { const bh0 = S.board.length >= 3 ? best([...p.hole, ...S.board]) : null; cards = p.hole.map(c => cardHTML(c, "sm" + (bh0 && bh0.cards.includes(c) ? " hl" : "") + (p.folded ? " dim" : ""))).join(""); cardsCls = "show" + (newHand && S.status === "playing" ? " late" : ""); }
+    else if (showFace) { cards = p.hole.map(c => cardHTML(c, "sm" + (winnerIds.has(p.id) && S.results.hands[p.id]?.cards.includes(c) ? " hl" : ""))).join(""); cardsCls = "show"; }
     else if (!isMe && live(p) && S.status !== "lobby") {
       cards = cardHTML("back", "xs") + cardHTML("back", "xs");
       if (newHand && S.status === "playing") cardsCls = "late";
@@ -1024,7 +1025,6 @@ function renderTable() {
     const pct = hole.length === 2 && !me.folded ? strengthPct(hole, S.board) : 0;
     dock = `<div class="dock">
       <div class="head">
-        <div class="hole">${hole.length ? hole.map(c => cardHTML(c, "lg" + (newHand ? " deal" : "") + (bh && bh.cards.includes(c) ? " hl" : "") + (me.folded ? " dim" : ""))).join("") : cardHTML(null, "lg") + cardHTML(null, "lg")}</div>
         <div class="info">
           <div class="strength">${esc(strength)}</div>
           <div class="meter" title="Hand strength"><i style="width:${pct.toFixed(0)}%;--bgw:${pct ? (10000 / pct).toFixed(0) : 100}%"></i></div>
