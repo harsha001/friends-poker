@@ -152,11 +152,18 @@ input { background: rgba(0,0,0,.35); border: 1px solid var(--stroke); border-rad
 
 /* ---------- Table top bar ---------- */
 .tbar { display: flex; align-items: center; gap: 8px; }
-.tbar .codechip { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 13px; background: var(--glass); border: 1px solid var(--stroke); font-size: 13px; color: var(--muted); font-weight: 600; padding: 0 10px; }
+.tbar .codechip { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 13px; background: var(--glass); border: 1px solid var(--stroke); font-size: 13px; color: var(--muted); font-weight: 600; padding: 0 10px; }
 .tbar .codechip b { font-family: var(--num); color: var(--gold); letter-spacing: .2em; font-size: 15px; }
 
 /* ---------- Table ---------- */
-.tablewrap { position: relative; width: 100%; aspect-ratio: 3 / 4; max-height: 61vh; margin: 24px auto 0; }
+.tablearea { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; container-type: size; padding-top: 14px; }
+.tablewrap { position: relative; width: min(100cqw, 75cqh); height: min(133.33cqw, 100cqh); margin: 0 auto; }
+body.ingame { height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow: hidden; padding-block: 6px 8px; }
+body.ingame .wrap { height: 100%; gap: 8px; }
+body.ingame .dock { flex: none; }
+.rank { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: .02em; color: var(--gold-hi); background: rgba(10,6,20,.85); border: 1px solid rgba(244,197,90,.6); padding: 1px 7px; border-radius: 7px; box-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 5; pointer-events: none; }
+.rank.win { background: linear-gradient(180deg, var(--gold-hi), var(--gold)); color: #2a1a02; border-color: var(--gold-hi); }
+@media (prefers-reduced-motion: no-preference) { .rank { animation: rankin .3s ease-out both; } @keyframes rankin { from { opacity: 0; transform: translate(-50%, 4px); } } }
 .rail { position: absolute; inset: 6% 9.5%; border-radius: 999px;
   background: radial-gradient(120% 60% at 50% 0%, #3a2440, var(--leather) 60%), var(--leather);
   box-shadow: 0 0 0 2px var(--gold-lo), 0 0 0 3px rgba(0,0,0,.6), 0 0 34px rgba(244,197,90,.18), 0 24px 50px rgba(0,0,0,.65), inset 0 2px 1px rgba(255,255,255,.12); }
@@ -168,7 +175,7 @@ input { background: rgba(0,0,0,.35); border: 1px solid var(--stroke); border-rad
 .logo-mark { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); text-align: center; font-family: var(--display); color: rgba(255,255,255,.1); line-height: 1; white-space: nowrap; }
 .logo-mark .s { font-size: 14px; letter-spacing: .4em; }
 .logo-mark .t { font-size: 20px; letter-spacing: .08em; }
-.center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); display: flex; flex-direction: column; align-items: center; gap: 7px; width: 58%; z-index: 2; }
+.center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%) scale(var(--s, 1)); display: flex; flex-direction: column; align-items: center; gap: 7px; width: 58%; z-index: 2; }
 .street { font-size: 10px; text-transform: uppercase; letter-spacing: .24em; color: rgba(255,255,255,.6); font-weight: 700; }
 .potpill { display: inline-flex; align-items: center; gap: 7px; background: rgba(0,0,0,.45); border: 1px solid rgba(244,197,90,.45); padding: 3px 13px 3px 4px; border-radius: 999px; font-family: var(--num); font-size: 15px; font-weight: 700; color: var(--gold-hi); box-shadow: 0 4px 12px rgba(0,0,0,.35); }
 .board { display: flex; gap: 3px; justify-content: center; perspective: 600px; }
@@ -178,7 +185,7 @@ input { background: rgba(0,0,0,.35); border: 1px solid var(--stroke); border-rad
 .msg .win { color: var(--gold-hi); font-weight: 800; }
 
 /* Seats */
-.seat { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: 92px; z-index: 3; }
+.seat { position: absolute; transform: translate(-50%, -50%) scale(var(--s, 1)); display: flex; flex-direction: column; align-items: center; width: 92px; z-index: 3; }
 .seat .cards { display: flex; height: 26px; margin-bottom: -8px; position: relative; z-index: 3; }
 .seat .cards .card + .card { margin-left: -8px; }
 .seat .cards .card:first-child { transform: rotate(-9deg); } .seat .cards .card:last-child { transform: rotate(9deg); }
@@ -257,8 +264,10 @@ input { background: rgba(0,0,0,.35); border: 1px solid var(--stroke); border-rad
 .raise .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .raise .quick button { padding: 9px 4px; font-size: 13px; border-radius: 12px; }
 .raise input[type=range] { padding: 0; accent-color: var(--raise); height: 30px; background: transparent; border: 0; }
-.raise .amt { display: flex; justify-content: space-between; align-items: center; }
-.raise .amt b { font-family: var(--num); font-size: 24px; color: var(--gold-hi); }
+.raise .amt { display: flex; gap: 12px; align-items: center; }
+.raise .amt input { flex: 1; min-width: 0; }
+.raise { gap: 8px; }
+.raise .amt b { font-family: var(--num); font-size: 22px; color: var(--gold-hi); min-width: 64px; }
 .pre { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .pre button { padding: 10px 4px; font-size: 12.5px; border-radius: 12px; background: var(--glass); border: 1px solid var(--stroke); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
 .pre button i { width: 14px; height: 14px; border-radius: 4px; border: 2px solid currentColor; flex: none; }
@@ -325,6 +334,7 @@ label.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; co
   padding: 10px 14px; border-radius: 14px; font-size: 14px; max-width: calc(100% - 32px); z-index: 70; box-shadow: 0 10px 24px rgba(0,0,0,.55); font-weight: 600; }
 .toast.ok { background: #0f2e1d; color: #dcfce7; border-color: var(--ok); }
 @media (max-width: 400px) {
+  .tbar .codechip .stk-nm { display: none; }
   .card { width: 34px; height: 48px; } .card .r { font-size: 15px; } .card .s1 { top: 17px; font-size: 10px; } .card .pip { font-size: 22px; }
   .board .card { width: 32px; height: 46px; } .board .card .pip { font-size: 19px; } .board .card .s1 { top: 17px; }
   .seat { width: 80px; } .plate { width: 84px; padding: 7px 3px 3px; }
@@ -859,6 +869,11 @@ function tagFor(p, S) {
   if (/^Raise/.test(l)) return [l.replace("Raise to ", "Raise "), "raise"];
   return [l, ""];
 }
+function handRank(hole, board) {
+  if (hole.length < 2) return "";
+  if (board.length >= 3) return best([...hole, ...board]).name;
+  return hole[0][0] === hole[1][0] ? "Pair" : "High card";
+}
 function strengthPct(hole, board) {
   if (hole.length < 2) return 0;
   if (board.length >= 3) { const b = best([...hole, ...board]); return Math.min(100, 14 + b.score[0] * 10.5 + (b.score[1] || 0) / 14 * 7); }
@@ -934,6 +949,7 @@ function seatLayout(n, meIdx) {
   return out;
 }
 function betPos(x, y) {
+  if (y > 80) return { x: x + 19, y: y - 9 }; // your seat: chips sit beside your cards
   const dd = Math.hypot(50 - x, 48 - y) || 1, kk = Math.min(0.6, 15 / dd);
   let bx = x + (50 - x) * kk, by = y + (48 - y) * kk;
   if (bx > 20 && bx < 80 && by > 43 && by < 62) by = by < 52 ? 42 : 64;
@@ -985,6 +1001,13 @@ function renderTable() {
     if (newHand && S.status === "playing" && p.inHand) {
       for (let k = 0; k < 2; k++) ghosts += `<div class="ghost-card" style="left:${x}%;top:${y - 6}%;--sx:50%;--sy:44%;animation-delay:${(k * lay.length + order) * 0.05}s,${(k * lay.length + order) * 0.05 + .38}s">${cardHTML("back", "xs")}</div>`;
     }
+    let rankLbl = "";
+    if (isMe && p.inHand && p.hole.length === 2 && !p.folded) {
+      const rn = S.status === "over" && S.results?.reveal ? S.results.hands[p.id]?.name : handRank(p.hole, S.board);
+      if (rn) rankLbl = `<span class="rank ${S.status === "over" && winnerIds.has(p.id) ? "win" : ""}">${esc(rn)}</span>`;
+    } else if (showFace && S.results.hands[p.id]?.name) {
+      rankLbl = `<span class="rank ${winnerIds.has(p.id) ? "win" : ""}">${esc(S.results.hands[p.id].name)}</span>`;
+    }
     const isTurn = turnP && turnP.id === p.id;
     const frac = isTurn ? timeLeft() / TURN_MS : 1;
     const ring = isTurn ? `<svg class="ring" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="24"/><circle class="fg" data-ring cx="27" cy="27" r="24" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}"/></svg>` : "";
@@ -993,7 +1016,7 @@ function renderTable() {
     else if (S.status === "over" && winnerIds.has(p.id)) { tag = "Winner"; tcls = "win"; }
     if (isTurn) { tag = `${Math.ceil(timeLeft() / 1000)}s`; tcls = "time"; }
     seats += `<div class="seat ${isTurn ? "turn" : ""} ${p.inHand && p.folded ? "folded" : ""} ${winnerIds.has(p.id) && S.status === "over" ? "winner" : ""} ${p.sittingOut && !p.inHand ? "away" : ""}" style="left:${x}%;top:${y}%">
-      <div class="cards ${cardsCls}">${cards}</div>
+      <div class="cards ${cardsCls}">${rankLbl}${cards}</div>
       <div class="avw">${ring}${avHTML(p.id, p.av)}</div>
       <div class="plate"><div class="nm">${esc(isMe ? "You" : p.name)}</div><div class="ch">${fmt(p.chips)}</div>${tag ? `<span class="tag ${tcls}" ${isTurn ? "data-secs" : ""}>${esc(tag)}</span>` : ""}</div>
     </div>`;
@@ -1040,12 +1063,12 @@ function renderTable() {
   return `
   <div class="tbar">
     <button class="iconbtn" id="lobbyBtn" aria-label="Lobby">${ICON.back}</button>
-    <button class="codechip" id="copyBtn">${S.stake ? esc((STAKES.find(k => k.id === S.stake) || {}).name || "") + " · " : ""}${fmt(S.sb)}/${fmt(S.bb)} · <b>${esc(S.code)}</b></button>
+    <button class="codechip" id="copyBtn">${S.stake ? `<span class="stk-nm">${esc((STAKES.find(k => k.id === S.stake) || {}).name || "")} ·</span> ` : ""}${fmt(S.sb)}/${fmt(S.bb)} · <b>${esc(S.code)}</b></button>
     <button class="iconbtn" id="chatBtn" aria-label="Chat">${ICON.chat}<span class="badge" id="chatBadge" hidden></span></button>
     <button class="iconbtn" id="lbBtn" aria-label="Leaderboard">${ICON.trophy}</button>
     <button class="iconbtn" id="menuBtn" aria-label="Menu">${ICON.menu}</button>
   </div>
-  <div class="tablewrap" id="tablewrap">
+  <div class="tablearea"><div class="tablewrap" id="tablewrap">
     <div class="rail"></div>
     <div class="felt"><div class="logo-mark"><div class="s">♠ ♥ ♣ ♦</div><div class="t">FRIENDS POKER</div></div></div>
     <div class="center">
@@ -1056,7 +1079,7 @@ function renderTable() {
     </div>
     ${extras}${seats}${ghosts}
     <div id="bubbles"></div>
-  </div>
+  </div></div>
   ${dock}`;
 }
 
@@ -1079,8 +1102,7 @@ function actionArea(me) {
     const half = Math.min(maxTo, Math.max(minTo, S.currentBet + Math.floor((pot + toCall) / 2)));
     const full = Math.min(maxTo, Math.max(minTo, S.currentBet + pot + toCall));
     return `${clock}<div class="raise">
-      <div class="amt"><span class="note">${S.currentBet ? "Raise to" : "Bet"}</span><b id="raiseAmt">${fmt(raiseVal)}</b></div>
-      <input type="range" id="raiseRange" min="${minTo}" max="${maxTo}" step="${Math.max(1, Math.min(S.bb / 2, 50))}" value="${raiseVal}" aria-label="Raise amount">
+      <div class="amt"><b id="raiseAmt">${fmt(raiseVal)}</b><input type="range" id="raiseRange" min="${minTo}" max="${maxTo}" step="${Math.max(1, Math.min(S.bb / 2, 50))}" value="${raiseVal}" aria-label="Raise amount"></div>
       <div class="quick" style="display:grid;grid-template-columns:repeat(4,1fr)"><button data-amt="${minTo}">Min</button><button data-amt="${half}">½ Pot</button><button data-amt="${full}">Pot</button><button data-amt="${maxTo}">All-in</button></div>
       <div class="acts" style="grid-template-columns:1fr 2fr"><button class="ghost" id="raiseCancel" style="color:var(--text)">Back</button><button class="a-raise" id="raiseGo">${raiseVal >= maxTo ? "All-in" : S.currentBet ? "Raise" : "Bet"}<small>${fmt(raiseVal)}</small></button></div>
     </div>`;
@@ -1208,6 +1230,11 @@ function bindSheet(host) {
 /* ---------- Render loop ---------- */
 let lastTurnKey = "", lastWinShown = -1, warned = "", preAct = null, preKey = "";
 const preKeyNow = () => S ? `${S.handNo}:${S.street}` : "";
+function fitTable() {
+  const tw = document.getElementById("tablewrap");
+  if (tw) tw.style.setProperty("--s", Math.max(0.7, Math.min(1, tw.clientWidth / 360)).toFixed(3));
+}
+window.addEventListener("resize", fitTable);
 function render() {
   const active = document.activeElement?.id;
   if (S && tableCode) {
@@ -1218,6 +1245,7 @@ function render() {
     if (S.status === "over" && S.handNo !== lastWinShown && (S.results?.winners || []).some(w => w.id === myId)) sfx.win();
     lastTurnKey = key;
   }
+  document.body.classList.toggle("ingame", !!(tableCode && S));
   $app.innerHTML = tableCode ? renderTable() : renderLobby();
   if (S && tableCode) {
     const bets = {};
@@ -1227,6 +1255,7 @@ function render() {
     trackStats();
   }
   if (active && document.getElementById(active) && active !== "raiseRange") document.getElementById(active).focus();
+  fitTable();
   if (sheet && sheet !== "chat" && sheet !== "profile") renderSheet();
   bind(); updateBadge(); renderBubbles(); tick(); runPreAction();
 }
